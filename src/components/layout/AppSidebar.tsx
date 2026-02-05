@@ -9,9 +9,9 @@
    UtensilsCrossed,
    Users,
    Settings,
+  ShieldCheck,
    ChevronLeft,
    ChevronRight,
-   ShieldCheck,
    UserCog,
  } from 'lucide-react';
  import { cn } from '@/lib/utils';
@@ -39,6 +39,7 @@
    { icon: CreditCard, label: 'Billing', path: '/billing', roles: ['admin'] },
    { icon: QrCode, label: 'Attendance', path: '/attendance', roles: ['admin', 'warden'] },
    { icon: UtensilsCrossed, label: 'Mess', path: '/mess', roles: ['admin', 'warden'] },
+  { icon: ShieldCheck, label: 'Building', path: '/building', roles: ['admin'] },
    { icon: Settings, label: 'Settings', path: '/settings', roles: ['admin'] },
  ];
  

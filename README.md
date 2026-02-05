@@ -60,6 +60,81 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Admin panel guide
+
+The Admin Panel lets you configure buildings, rooms, bedspaces, and warden assignments.
+
+![Admin panel overview](public/placeholder.svg)
+
+### Quick start
+
+1. Open **Admin Panel** from the sidebar.
+2. Add one or more buildings with floor counts and addresses.
+3. Create rooms under each building and set bedspace pricing.
+4. Configure bedspaces to fine-tune pricing and features.
+5. Assign wardens to buildings (one building per warden).
+
+### Example data (copy/paste)
+
+- Building: Green Valley Tower, 6 floors, capacity 240
+- Room: A-101, Double, 2 bedspaces, price 6200
+- Bedspace: A-101-B1, price 6200, feature "Near Window"
+- Warden: Anita Rao, +91 98989 76543
+
+### Suggested database schema
+
+```sql
+create table buildings (
+  id uuid primary key,
+  name text not null,
+  address text not null,
+  total_floors int not null,
+  total_rooms int not null,
+  capacity int,
+  notes text,
+  created_at timestamp not null default now()
+);
+
+create table rooms (
+  id uuid primary key,
+  building_id uuid not null references buildings(id),
+  number text not null,
+  type text not null,
+  floor_number int not null,
+  total_bedspaces int not null,
+  base_price int not null,
+  has_attached_bathroom boolean not null default false,
+  features text[],
+  created_at timestamp not null default now(),
+  unique (building_id, number)
+);
+
+create table bedspaces (
+  id uuid primary key,
+  room_id uuid not null references rooms(id),
+  label text not null,
+  price int not null,
+  features text[],
+  created_at timestamp not null default now(),
+  unique (room_id, label)
+);
+
+create table wardens (
+  id uuid primary key,
+  name text not null,
+  contact text not null unique,
+  building_id uuid not null references buildings(id),
+  created_at timestamp not null default now()
+);
+```
+
+### Validation rules
+
+- Room numbers must be unique within a building.
+- Bedspace labels must be unique within a room.
+- Pricing must be a positive number.
+- Each warden can be assigned to only one building.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.

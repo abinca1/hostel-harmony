@@ -11,6 +11,7 @@
  import BillingPage from "./pages/BillingPage";
  import AttendancePage from "./pages/AttendancePage";
  import MessPage from "./pages/MessPage";
+import AdminPanelPage from "./pages/AdminPanelPage";
  import SettingsPage from "./pages/SettingsPage";
  import NotFound from "./pages/NotFound";
  
@@ -31,6 +32,7 @@
                <Route path="/billing" element={<BillingPage />} />
                <Route path="/attendance" element={<AttendancePage />} />
                <Route path="/mess" element={<MessPage />} />
+              <Route path="/building" element={<AdminPanelPage />} />
                <Route path="/settings" element={<SettingsPage />} />
                <Route path="*" element={<NotFound />} />
              </Routes>

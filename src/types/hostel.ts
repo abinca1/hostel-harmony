@@ -44,7 +44,7 @@
    id: string;
    number: string;
    floorId: string;
-   category: 'single' | 'double' | 'triple' | 'dormitory';
+  category: 'single' | 'double' | 'triple' | 'suite' | 'dorm' | 'dormitory';
    status: RoomStatus;
    monthlyRent: number;
    beds: Bed[];
