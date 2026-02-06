@@ -3,8 +3,8 @@
    LayoutDashboard,
    Bed,
    CreditCard,
-   QrCode,
-   UtensilsCrossed,
+  UtensilsCrossed,
+  Users,
  } from 'lucide-react';
  import { cn } from '@/lib/utils';
  import { useApp } from '@/contexts/AppContext';
@@ -13,7 +13,7 @@
    { icon: LayoutDashboard, label: 'Home', path: '/' },
    { icon: Bed, label: 'Rooms', path: '/rooms' },
    { icon: CreditCard, label: 'Billing', path: '/billing', adminOnly: true },
-   { icon: QrCode, label: 'Attendance', path: '/attendance' },
+  { icon: Users, label: 'Warden', path: '/attendance' },
    { icon: UtensilsCrossed, label: 'Mess', path: '/mess' },
  ];
  

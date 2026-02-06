@@ -1,387 +1,438 @@
- import { useState } from 'react';
- import { Header } from '@/components/layout/Header';
- import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
- import { Button } from '@/components/ui/button';
- import { Badge } from '@/components/ui/badge';
- import { Input } from '@/components/ui/input';
- import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
- import {
-   Table,
-   TableBody,
-   TableCell,
-   TableHead,
-   TableHeader,
-   TableRow,
- } from '@/components/ui/table';
- import {
-   Dialog,
-   DialogContent,
-   DialogHeader,
-   DialogTitle,
- } from '@/components/ui/dialog';
- import {
-   QrCode,
-   ArrowUpRight,
-   ArrowDownLeft,
-   Clock,
-   User,
-   Search,
-   Download,
-   Camera,
-   CheckCircle,
- } from 'lucide-react';
- import { getEnrichedEntryLogs, mockResidents, mockDashboardKPIs } from '@/data/mockData';
- import { cn } from '@/lib/utils';
- 
- const AttendancePage = () => {
-   const [showScanner, setShowScanner] = useState(false);
-   const [searchTerm, setSearchTerm] = useState('');
-   const [scanResult, setScanResult] = useState<{
-     name: string;
-     room: string;
-     type: 'entry' | 'exit';
-   } | null>(null);
- 
-   const entryLogs = getEnrichedEntryLogs();
-   const kpis = mockDashboardKPIs;
- 
-   const filteredLogs = entryLogs.filter(log =>
-     log.resident?.name.toLowerCase().includes(searchTerm.toLowerCase())
-   ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
- 
-   const formatTime = (timestamp: string) => {
-     return new Date(timestamp).toLocaleTimeString('en-IN', {
-       hour: '2-digit',
-       minute: '2-digit',
-     });
-   };
- 
-   const formatDate = (timestamp: string) => {
-     return new Date(timestamp).toLocaleDateString('en-IN', {
-       day: 'numeric',
-       month: 'short',
-     });
-   };
- 
-   // Simulated QR scan
-   const handleSimulateScan = () => {
-     const randomResident = mockResidents[Math.floor(Math.random() * mockResidents.length)];
-     const type = Math.random() > 0.5 ? 'entry' : 'exit';
-     
-     setScanResult({
-       name: randomResident.name,
-       room: randomResident.roomId.replace('room-', ''),
-       type,
-     });
- 
-     setTimeout(() => {
-       setScanResult(null);
-       setShowScanner(false);
-     }, 3000);
-   };
- 
-   // Track who's currently out
-   const residentsStatus = mockResidents.map(resident => {
-     const lastLog = entryLogs
-       .filter(l => l.residentId === resident.id)
-       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
- 
-     return {
-       resident,
-       isIn: lastLog?.type === 'entry' || !lastLog,
-       lastActivity: lastLog?.timestamp,
-     };
-   });
- 
-   const insideCount = residentsStatus.filter(r => r.isIn).length;
-   const outsideCount = residentsStatus.filter(r => !r.isIn).length;
- 
-   return (
-     <div className="animate-fade-in">
-       <Header
-         title="Attendance & Access"
-         subtitle="QR-based entry/exit tracking"
-       />
- 
-       <div className="p-4 md:p-6 space-y-6">
-         {/* KPI Cards */}
-         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-           <Card className="kpi-card before:bg-success">
-             <CardContent className="pt-0">
-               <div className="flex items-start justify-between">
-                 <div>
-                   <p className="text-sm text-muted-foreground">Inside Hostel</p>
-                   <p className="text-3xl font-bold">{insideCount}</p>
-                 </div>
-                 <div className="p-2 rounded-lg bg-success/10">
-                   <ArrowDownLeft className="w-5 h-5 text-success" />
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
- 
-           <Card className="kpi-card before:bg-warning">
-             <CardContent className="pt-0">
-               <div className="flex items-start justify-between">
-                 <div>
-                   <p className="text-sm text-muted-foreground">Outside</p>
-                   <p className="text-3xl font-bold">{outsideCount}</p>
-                 </div>
-                 <div className="p-2 rounded-lg bg-warning/10">
-                   <ArrowUpRight className="w-5 h-5 text-warning" />
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
- 
-           <Card className="kpi-card before:bg-primary">
-             <CardContent className="pt-0">
-               <div className="flex items-start justify-between">
-                 <div>
-                   <p className="text-sm text-muted-foreground">Today's Entries</p>
-                   <p className="text-3xl font-bold">{kpis.todayEntries}</p>
-                 </div>
-                 <div className="p-2 rounded-lg bg-primary/10">
-                   <ArrowDownLeft className="w-5 h-5 text-primary" />
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
- 
-           <Card className="kpi-card before:bg-muted-foreground">
-             <CardContent className="pt-0">
-               <div className="flex items-start justify-between">
-                 <div>
-                   <p className="text-sm text-muted-foreground">Today's Exits</p>
-                   <p className="text-3xl font-bold">{kpis.todayExits}</p>
-                 </div>
-                 <div className="p-2 rounded-lg bg-muted">
-                   <ArrowUpRight className="w-5 h-5 text-muted-foreground" />
-                 </div>
-               </div>
-             </CardContent>
-           </Card>
-         </div>
- 
-         {/* QR Scanner Button */}
-         <div className="flex justify-center">
-           <Button
-             size="lg"
-             className="gradient-primary h-16 px-8 text-lg"
-             onClick={() => setShowScanner(true)}
-           >
-             <QrCode className="w-6 h-6 mr-3" />
-             Scan QR Code
-           </Button>
-         </div>
- 
-         {/* Tabs for Logs and Status */}
-         <Tabs defaultValue="logs" className="space-y-4">
-           <TabsList className="bg-muted/50">
-             <TabsTrigger value="logs">Entry/Exit Logs</TabsTrigger>
-             <TabsTrigger value="status">Current Status</TabsTrigger>
-           </TabsList>
- 
-           <TabsContent value="logs">
-             <Card>
-               <CardHeader className="pb-3">
-                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                   <CardTitle className="text-lg flex items-center gap-2">
-                     <Clock className="w-5 h-5 text-muted-foreground" />
-                     Activity Log
-                   </CardTitle>
-                   <div className="flex items-center gap-3">
-                     <div className="relative">
-                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                       <Input
-                         placeholder="Search resident..."
-                         className="pl-9 w-56"
-                         value={searchTerm}
-                         onChange={(e) => setSearchTerm(e.target.value)}
-                       />
-                     </div>
-                     <Button variant="outline" size="sm">
-                       <Download className="w-4 h-4 mr-2" />
-                       Export
-                     </Button>
-                   </div>
-                 </div>
-               </CardHeader>
-               <CardContent>
-                 <div className="rounded-lg border overflow-hidden">
-                   <Table>
-                     <TableHeader>
-                       <TableRow className="bg-muted/50">
-                         <TableHead>Resident</TableHead>
-                         <TableHead>Type</TableHead>
-                         <TableHead>Time</TableHead>
-                         <TableHead>Method</TableHead>
-                       </TableRow>
-                     </TableHeader>
-                     <TableBody>
-                       {filteredLogs.map((log) => (
-                         <TableRow key={log.id}>
-                           <TableCell>
-                             <div className="flex items-center gap-3">
-                               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                 <span className="text-xs font-medium text-primary">
-                                   {log.resident?.name.split(' ').map(n => n[0]).join('')}
-                                 </span>
-                               </div>
-                               <div>
-                                 <p className="font-medium">{log.resident?.name}</p>
-                                 <p className="text-xs text-muted-foreground">
-                                   Room {log.resident?.roomId.replace('room-', '')}
-                                 </p>
-                               </div>
-                             </div>
-                           </TableCell>
-                           <TableCell>
-                             <span
-                               className={cn(
-                                 'status-badge',
-                                 log.type === 'entry' ? 'status-available' : 'status-maintenance'
-                               )}
-                             >
-                               {log.type === 'entry' ? (
-                                 <ArrowDownLeft className="w-3 h-3" />
-                               ) : (
-                                 <ArrowUpRight className="w-3 h-3" />
-                               )}
-                               {log.type}
-                             </span>
-                           </TableCell>
-                           <TableCell>
-                             <div>
-                               <p className="font-medium">{formatTime(log.timestamp)}</p>
-                               <p className="text-xs text-muted-foreground">{formatDate(log.timestamp)}</p>
-                             </div>
-                           </TableCell>
-                           <TableCell>
-                             <Badge variant="outline" className="text-xs">
-                               {log.method.toUpperCase()}
-                             </Badge>
-                           </TableCell>
-                         </TableRow>
-                       ))}
-                     </TableBody>
-                   </Table>
-                 </div>
-               </CardContent>
-             </Card>
-           </TabsContent>
- 
-           <TabsContent value="status">
-             <Card>
-               <CardHeader className="pb-3">
-                 <CardTitle className="text-lg flex items-center gap-2">
-                   <User className="w-5 h-5 text-muted-foreground" />
-                   Current Resident Status
-                 </CardTitle>
-               </CardHeader>
-               <CardContent>
-                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                   {residentsStatus.map(({ resident, isIn, lastActivity }) => (
-                     <div
-                       key={resident.id}
-                       className={cn(
-                         'p-4 rounded-lg border transition-colors',
-                         isIn ? 'bg-success/5 border-success/20' : 'bg-warning/5 border-warning/20'
-                       )}
-                     >
-                       <div className="flex items-center gap-3">
-                         <div
-                           className={cn(
-                             'w-10 h-10 rounded-full flex items-center justify-center',
-                             isIn ? 'bg-success/10' : 'bg-warning/10'
-                           )}
-                         >
-                           <span className={cn('text-sm font-medium', isIn ? 'text-success' : 'text-warning')}>
-                             {resident.name.split(' ').map(n => n[0]).join('')}
-                           </span>
-                         </div>
-                         <div className="flex-1 min-w-0">
-                           <p className="font-medium truncate">{resident.name}</p>
-                           <p className="text-xs text-muted-foreground">
-                             Room {resident.roomId.replace('room-', '')}
-                           </p>
-                         </div>
-                         <span
-                           className={cn(
-                             'status-badge',
-                             isIn ? 'status-available' : 'status-maintenance'
-                           )}
-                         >
-                           {isIn ? 'IN' : 'OUT'}
-                         </span>
-                       </div>
-                     </div>
-                   ))}
-                 </div>
-               </CardContent>
-             </Card>
-           </TabsContent>
-         </Tabs>
-       </div>
- 
-       {/* QR Scanner Dialog */}
-       <Dialog open={showScanner} onOpenChange={setShowScanner}>
-         <DialogContent className="max-w-md">
-           <DialogHeader>
-             <DialogTitle className="flex items-center gap-2">
-               <QrCode className="w-5 h-5" />
-               QR Scanner
-             </DialogTitle>
-           </DialogHeader>
- 
-           {!scanResult ? (
-             <div className="space-y-4">
-               <div className="aspect-square bg-muted rounded-xl flex items-center justify-center relative overflow-hidden">
-                 <div className="absolute inset-4 border-2 border-primary/30 rounded-lg" />
-                 <div className="absolute inset-4 border-t-2 border-primary animate-pulse" style={{ animation: 'scan 2s ease-in-out infinite' }} />
-                 <Camera className="w-16 h-16 text-muted-foreground/30" />
-               </div>
-               <p className="text-sm text-center text-muted-foreground">
-                 Position the QR code within the frame
-               </p>
-               <Button className="w-full" onClick={handleSimulateScan}>
-                 Simulate Scan (Demo)
-               </Button>
-             </div>
-           ) : (
-             <div className="text-center space-y-4 py-6">
-               <div className={cn(
-                 'w-20 h-20 mx-auto rounded-full flex items-center justify-center',
-                 scanResult.type === 'entry' ? 'bg-success/10' : 'bg-warning/10'
-               )}>
-                 <CheckCircle className={cn(
-                   'w-10 h-10',
-                   scanResult.type === 'entry' ? 'text-success' : 'text-warning'
-                 )} />
-               </div>
-               <div>
-                 <p className="text-xl font-semibold">{scanResult.name}</p>
-                 <p className="text-muted-foreground">Room {scanResult.room}</p>
-               </div>
-               <Badge className={cn(
-                 'text-lg py-2 px-4',
-                 scanResult.type === 'entry' ? 'bg-success' : 'bg-warning'
-               )}>
-                 {scanResult.type === 'entry' ? 'Entry Recorded' : 'Exit Recorded'}
-               </Badge>
-             </div>
-           )}
-         </DialogContent>
-       </Dialog>
- 
-       <style>{`
-         @keyframes scan {
-           0%, 100% { top: 1rem; }
-           50% { top: calc(100% - 1rem - 2px); }
-         }
-       `}</style>
-     </div>
-   );
- };
- 
- export default AttendancePage;
+import { useState } from "react";
+import { Header } from "@/components/layout/Header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { User } from "@/types/hostel";
+
+type Warden = User & {
+  idProofType: string;
+  idProofNumber: string;
+  joinedDate: string;
+  salary: string;
+  assignedBuilding: string;
+  address: string;
+  contactNumber: string;
+};
+
+const AttendancePage = () => {
+  const [wardens, setWardens] = useState<Warden[]>([
+    {
+      id: "warden-1",
+      name: "Asha Kumar",
+      email: "asha.kumar@example.com",
+      phone: "+91 90000 10001",
+      role: "warden",
+      idProofType: "Aadhar",
+      idProofNumber: "XXXX-XXXX-1234",
+      joinedDate: "2023-02-10",
+      salary: "35000",
+      assignedBuilding: "Building A",
+      address: "12 MG Road, Bengaluru",
+      contactNumber: "+91 90000 20001",
+    },
+    {
+      id: "warden-2",
+      name: "Rohit Singh",
+      email: "rohit.singh@example.com",
+      phone: "+91 90000 10002",
+      role: "warden",
+      idProofType: "Passport",
+      idProofNumber: "P1234567",
+      joinedDate: "2022-08-05",
+      salary: "42000",
+      assignedBuilding: "Building B",
+      address: "7 Park Street, Kolkata",
+      contactNumber: "+91 90000 20002",
+    },
+  ]);
+  const [wardenDraft, setWardenDraft] = useState<Warden | null>(null);
+  const [isWardenDialogOpen, setIsWardenDialogOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [wardenToDelete, setWardenToDelete] = useState<Warden | null>(null);
+
+  const handleAddWarden = () => {
+    setWardenDraft({
+      id: `warden-${Date.now()}`,
+      name: "",
+      email: "",
+      phone: "",
+      role: "warden",
+      idProofType: "",
+      idProofNumber: "",
+      joinedDate: "",
+      salary: "",
+      assignedBuilding: "",
+      address: "",
+      contactNumber: "",
+    });
+    setIsWardenDialogOpen(true);
+  };
+
+  const handleEditWarden = (warden: Warden) => {
+    setWardenDraft({ ...warden });
+    setIsWardenDialogOpen(true);
+  };
+
+  const handleSaveWarden = () => {
+    if (!wardenDraft || !wardenDraft.name.trim()) return;
+    setWardens((prev) => {
+      const exists = prev.some((item) => item.id === wardenDraft.id);
+      if (exists) {
+        return prev.map((item) =>
+          item.id === wardenDraft.id ? wardenDraft : item,
+        );
+      }
+      return [...prev, wardenDraft];
+    });
+    setIsWardenDialogOpen(false);
+  };
+
+  const handleDeleteWarden = (warden: Warden) => {
+    setWardenToDelete(warden);
+    setIsDeleteOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!wardenToDelete) return;
+    setWardens((prev) => prev.filter((item) => item.id !== wardenToDelete.id));
+    setIsDeleteOpen(false);
+  };
+
+  return (
+    <div className="animate-fade-in">
+      <Header
+        title="Warden Management"
+        subtitle="Add, edit, and remove wardens"
+      />
+
+      <div className="p-4 md:p-6 space-y-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="w-5 h-5 text-muted-foreground" />
+                Wardens
+              </CardTitle>
+              <Button onClick={handleAddWarden}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Warden
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>ID Proof</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead>Salary</TableHead>
+                    <TableHead>Building</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {wardens.map((warden) => (
+                    <TableRow key={warden.id}>
+                      <TableCell className="font-medium">
+                        {warden.name}
+                      </TableCell>
+                      <TableCell>{warden.email}</TableCell>
+                      <TableCell>{warden.phone}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p className="font-medium">
+                            {warden.idProofType || "-"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {warden.idProofNumber || "-"}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {warden.joinedDate
+                          ? new Date(warden.joinedDate).toLocaleDateString(
+                              "en-IN",
+                            )
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {warden.salary ? `₹${warden.salary}` : "-"}
+                      </TableCell>
+                      <TableCell>{warden.assignedBuilding || "-"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditWarden(warden)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteWarden(warden)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {wardens.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={8}
+                        className="text-center text-sm text-muted-foreground"
+                      >
+                        No wardens added yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={isWardenDialogOpen} onOpenChange={setIsWardenDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {wardenDraft?.name ? "Edit Warden" : "Add Warden"}
+            </DialogTitle>
+          </DialogHeader>
+          {wardenDraft ? (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="warden-name">Name</Label>
+                  <Input
+                    id="warden-name"
+                    value={wardenDraft.name}
+                    onChange={(event) =>
+                      setWardenDraft({
+                        ...wardenDraft,
+                        name: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warden-phone">Phone</Label>
+                  <Input
+                    id="warden-phone"
+                    value={wardenDraft.phone}
+                    onChange={(event) =>
+                      setWardenDraft({
+                        ...wardenDraft,
+                        phone: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warden-email">Email</Label>
+                  <Input
+                    id="warden-email"
+                    type="email"
+                    value={wardenDraft.email}
+                    onChange={(event) =>
+                      setWardenDraft({
+                        ...wardenDraft,
+                        email: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warden-joined">Joined Date</Label>
+                  <Input
+                    id="warden-joined"
+                    type="date"
+                    value={wardenDraft.joinedDate}
+                    onChange={(event) =>
+                      setWardenDraft({
+                        ...wardenDraft,
+                        joinedDate: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warden-salary">Salary (₹)</Label>
+                  <Input
+                    id="warden-salary"
+                    type="number"
+                    value={wardenDraft.salary}
+                    onChange={(event) =>
+                      setWardenDraft({
+                        ...wardenDraft,
+                        salary: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Assigned Building</Label>
+                  <Select
+                    value={wardenDraft.assignedBuilding}
+                    onValueChange={(value) =>
+                      setWardenDraft({
+                        ...wardenDraft,
+                        assignedBuilding: value,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select building" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Building A", "Building B", "Building C"].map(
+                        (building) => (
+                          <SelectItem key={building} value={building}>
+                            {building}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>ID Proof Type</Label>
+                  <Select
+                    value={wardenDraft.idProofType}
+                    onValueChange={(value) =>
+                      setWardenDraft({ ...wardenDraft, idProofType: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select ID type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        "Aadhar",
+                        "Passport",
+                        "Driving License",
+                        "Voter ID",
+                      ].map((idType) => (
+                        <SelectItem key={idType} value={idType}>
+                          {idType}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warden-id-number">ID Proof Number</Label>
+                  <Input
+                    id="warden-id-number"
+                    value={wardenDraft.idProofNumber}
+                    onChange={(event) =>
+                      setWardenDraft({
+                        ...wardenDraft,
+                        idProofNumber: event.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="warden-address">Address</Label>
+                <Input
+                  id="warden-address"
+                  value={wardenDraft.address}
+                  onChange={(event) =>
+                    setWardenDraft({
+                      ...wardenDraft,
+                      address: event.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="warden-contact">Contact number 2</Label>
+                <Input
+                  id="warden-contact"
+                  value={wardenDraft.contactNumber}
+                  onChange={(event) =>
+                    setWardenDraft({
+                      ...wardenDraft,
+                      contactNumber: event.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No warden selected.</p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsWardenDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveWarden}>Save Warden</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Warden</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete{" "}
+            <span className="font-medium text-foreground">
+              {wardenToDelete?.name}
+            </span>
+            ?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AttendancePage;

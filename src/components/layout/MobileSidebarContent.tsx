@@ -4,7 +4,6 @@
    LayoutDashboard,
    Bed,
    CreditCard,
-   QrCode,
    UtensilsCrossed,
    Users,
    Settings,
@@ -26,7 +25,7 @@
    { icon: Bed, label: 'Rooms & Beds', path: '/rooms', roles: ['admin', 'warden'] },
    { icon: Users, label: 'Residents', path: '/residents', roles: ['admin', 'warden'] },
    { icon: CreditCard, label: 'Billing', path: '/billing', roles: ['admin'] },
-   { icon: QrCode, label: 'Attendance', path: '/attendance', roles: ['admin', 'warden'] },
+  { icon: Users, label: 'Warden', path: '/attendance', roles: ['admin', 'warden'] },
    { icon: UtensilsCrossed, label: 'Mess', path: '/mess', roles: ['admin', 'warden'] },
    { icon: Settings, label: 'Settings', path: '/settings', roles: ['admin'] },
  ];
