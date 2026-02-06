@@ -7,7 +7,9 @@ import {
   MealPlan,
   MenuItem,
   MealAttendance,
+  LeaveRecord,
   DashboardKPIs,
+  InventoryItem,
 } from "@/types/hostel";
 
 // Mock Hostels with hierarchy
@@ -820,6 +822,114 @@ export const mockMealAttendance: MealAttendance[] = [
     mealType: "breakfast",
     attended: true,
     optedOut: false,
+  },
+];
+
+// Mock Leave Records (short stays away from hostel)
+export const mockLeaveRecords: LeaveRecord[] = [
+  {
+    id: "leave-1",
+    residentId: "resident-3",
+    startDate: today,
+    endDate: today,
+    reason: "Family function",
+    markedBy: "Warden Kumar",
+    markedAt: `${today}T09:00:00`,
+  },
+  {
+    id: "leave-2",
+    residentId: "resident-6",
+    startDate: today,
+    endDate: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
+    reason: "Medical appointment",
+    markedBy: "Warden Kumar",
+    markedAt: `${today}T10:15:00`,
+  },
+];
+
+// Mock Inventory Items
+export const mockInventoryItems: InventoryItem[] = [
+  {
+    id: "inv-1",
+    name: "Basmati Rice",
+    category: "grain",
+    unit: "kg",
+    currentStock: 145,
+    minStock: 100,
+    supplier: "Shree Grains Co.",
+    lastUpdated: "2024-02-04",
+  },
+  {
+    id: "inv-2",
+    name: "Toor Dal",
+    category: "grain",
+    unit: "kg",
+    currentStock: 65,
+    minStock: 80,
+    supplier: "Shree Grains Co.",
+    lastUpdated: "2024-02-03",
+  },
+  {
+    id: "inv-3",
+    name: "Fresh Vegetables Mix",
+    category: "vegetable",
+    unit: "kg",
+    currentStock: 48,
+    minStock: 50,
+    supplier: "Green Basket",
+    lastUpdated: "2024-02-05",
+  },
+  {
+    id: "inv-4",
+    name: "Paneer",
+    category: "dairy",
+    unit: "kg",
+    currentStock: 22,
+    minStock: 20,
+    supplier: "DairyFresh",
+    lastUpdated: "2024-02-05",
+  },
+  {
+    id: "inv-5",
+    name: "Chicken",
+    category: "meat",
+    unit: "kg",
+    currentStock: 18,
+    minStock: 25,
+    supplier: "Farm2Kitchen",
+    lastUpdated: "2024-02-05",
+  },
+  {
+    id: "inv-6",
+    name: "Cooking Oil",
+    category: "other",
+    unit: "liters",
+    currentStock: 42,
+    minStock: 35,
+    supplier: "SunGold Oils",
+    lastUpdated: "2024-02-02",
+  },
+  {
+    id: "inv-7",
+    name: "Masala Spice Mix",
+    category: "spice",
+    unit: "kg",
+    currentStock: 12,
+    minStock: 10,
+    supplier: "Spice Route",
+    lastUpdated: "2024-02-01",
+  },
+  {
+    id: "inv-8",
+    name: "Tea Leaves",
+    category: "beverage",
+    unit: "kg",
+    currentStock: 9,
+    minStock: 12,
+    supplier: "Brew Hub",
+    lastUpdated: "2024-02-05",
   },
 ];
 

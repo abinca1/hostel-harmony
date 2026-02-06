@@ -1,30 +1,39 @@
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  import { Button } from '@/components/ui/button';
- import { 
-   UserPlus, 
-   QrCode, 
-   Receipt, 
-   Bed, 
-   UtensilsCrossed,
-   FileText,
- } from 'lucide-react';
- import { useNavigate } from 'react-router-dom';
+import { 
+  UserPlus, 
+  QrCode, 
+  Bed, 
+  UtensilsCrossed,
+} from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
  import { useApp } from '@/contexts/AppContext';
  
  export function QuickActions() {
    const navigate = useNavigate();
+  const location = useLocation();
    const { currentRole } = useApp();
+  const basePath = location.pathname.startsWith('/warden')
+    ? '/warden'
+    : location.pathname.startsWith('/admin')
+      ? '/admin'
+      : '';
+
+  const buildPath = (path: string) => {
+    if (!basePath) return path;
+    if (path === '/') return basePath;
+    return `${basePath}${path}`;
+  };
  
-   const actions = [
-     { icon: UserPlus, label: 'New Admission', path: '/residents', color: 'bg-primary/10 text-primary hover:bg-primary/20' },
-     { icon: QrCode, label: 'Scan Entry', path: '/attendance', color: 'bg-success/10 text-success hover:bg-success/20' },
-     { icon: Bed, label: 'Allocate Room', path: '/rooms', color: 'bg-accent/10 text-accent hover:bg-accent/20' },
-     { icon: UtensilsCrossed, label: 'Mark Meals', path: '/mess', color: 'bg-warning/10 text-warning hover:bg-warning/20' },
-     ...(currentRole === 'admin' ? [
-       { icon: Receipt, label: 'Generate Bills', path: '/billing', color: 'bg-primary/10 text-primary hover:bg-primary/20' },
-       { icon: FileText, label: 'View Reports', path: '/settings', color: 'bg-muted text-muted-foreground hover:bg-muted/80' },
-     ] : []),
-   ];
+  const actions = [
+    { icon: UserPlus, label: 'New Admission', path: buildPath('/residents'), color: 'bg-primary/10 text-primary hover:bg-primary/20' },
+    { icon: Bed, label: 'Allocate Room', path: buildPath('/rooms'), color: 'bg-accent/10 text-accent hover:bg-accent/20' },
+    { icon: UtensilsCrossed, label: 'Mark Meals', path: buildPath('/mess'), color: 'bg-warning/10 text-warning hover:bg-warning/20' },
+    ...(currentRole === 'warden'
+      ? [{ icon: QrCode, label: 'Mark Attendance', path: buildPath('/attendance/meal'), color: 'bg-success/10 text-success hover:bg-success/20' }]
+      : []),
+    ...(currentRole === 'admin' ? [] : []),
+  ];
  
    return (
      <Card className="card-hover">

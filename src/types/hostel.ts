@@ -1,6 +1,6 @@
  // Core types for the Hostel Management System
  
- export type UserRole = 'admin' | 'warden';
+export type UserRole = 'admin' | 'warden' | 'cook';
  
  export type RoomStatus = 'available' | 'occupied' | 'maintenance' | 'reserved';
  
@@ -9,6 +9,17 @@
  export type MealType = 'breakfast' | 'lunch' | 'dinner';
  
  export type DietaryTag = 'vegetarian' | 'vegan' | 'non-veg' | 'jain' | 'halal';
+
+export type InventoryCategory =
+  | 'grain'
+  | 'vegetable'
+  | 'fruit'
+  | 'dairy'
+  | 'spice'
+  | 'meat'
+  | 'seafood'
+  | 'beverage'
+  | 'other';
  
  export interface User {
    id: string;
@@ -134,6 +145,17 @@
    markedBy?: string;
  }
  
+export interface LeaveRecord {
+  id: string;
+  residentId: string;
+  resident?: Resident;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  markedBy?: string;
+  markedAt?: string;
+}
+
  export interface MealFeedback {
    id: string;
    residentId: string;
@@ -142,6 +164,17 @@
    rating: 1 | 2 | 3 | 4 | 5;
    comment?: string;
  }
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: InventoryCategory;
+  unit: string;
+  currentStock: number;
+  minStock: number;
+  supplier?: string;
+  lastUpdated?: string;
+}
  
  // Dashboard KPIs
  export interface DashboardKPIs {

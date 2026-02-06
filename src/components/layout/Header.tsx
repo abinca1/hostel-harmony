@@ -1,4 +1,5 @@
- import { Bell, Menu, Search } from 'lucide-react';
+import { Bell, Menu, Search } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
  import { Button } from '@/components/ui/button';
  import { Input } from '@/components/ui/input';
  import { useApp } from '@/contexts/AppContext';
@@ -21,6 +22,10 @@
  
  export function Header({ title, subtitle }: HeaderProps) {
    const { currentUser, currentRole } = useApp();
+  const location = useLocation();
+  const isWardenModule = location.pathname.startsWith('/warden');
+  const isAdminModule = location.pathname.startsWith('/admin');
+  const isCookModule = location.pathname.startsWith('/cook');
  
    return (
      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
@@ -35,7 +40,12 @@
                </Button>
              </SheetTrigger>
              <SheetContent side="left" className="w-72 p-0">
-               <MobileSidebarContent />
+              <MobileSidebarContent
+                basePath={
+                  isWardenModule ? '/warden' : isCookModule ? '/cook' : isAdminModule ? '/admin' : undefined
+                }
+                showRoleSwitcher={!isWardenModule && !isCookModule}
+              />
              </SheetContent>
            </Sheet>
  
@@ -49,15 +59,6 @@
  
          {/* Right Section */}
          <div className="flex items-center gap-3">
-           {/* Search (Desktop) */}
-           <div className="relative hidden lg:block">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-             <Input
-               placeholder="Search residents, rooms..."
-               className="w-64 pl-9 bg-muted/50"
-             />
-           </div>
- 
            {/* Notifications */}
            <DropdownMenu>
              <DropdownMenuTrigger asChild>

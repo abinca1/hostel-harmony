@@ -1,17 +1,20 @@
  import { useState } from 'react';
- import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
  import {
    Building2,
    LayoutDashboard,
    Bed,
    CreditCard,
-   UtensilsCrossed,
+  Wallet,
+  UtensilsCrossed,
    Users,
    Settings,
   ShieldCheck,
    ChevronLeft,
    ChevronRight,
    UserCog,
+  Package,
+  ChefHat,
  } from 'lucide-react';
  import { cn } from '@/lib/utils';
  import { useApp } from '@/contexts/AppContext';
@@ -24,29 +27,61 @@
    SelectValue,
  } from '@/components/ui/select';
  
- interface NavItem {
-   icon: React.ElementType;
-   label: string;
-   path: string;
-   roles: ('admin' | 'warden')[];
- }
+interface NavItem {
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  roles: ('admin' | 'warden' | 'cook')[];
+}
  
- const navItems: NavItem[] = [
-   { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'warden'] },
-   { icon: Bed, label: 'Rooms & Beds', path: '/rooms', roles: ['admin', 'warden'] },
-   { icon: Users, label: 'Residents', path: '/residents', roles: ['admin', 'warden'] },
-   { icon: CreditCard, label: 'Billing', path: '/billing', roles: ['admin'] },
-  { icon: Users, label: 'Warden', path: '/attendance', roles: ['admin', 'warden'] },
-   { icon: UtensilsCrossed, label: 'Mess', path: '/mess', roles: ['admin', 'warden'] },
+const navItems: NavItem[] = [
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/', roles: ['admin', 'warden', 'cook'] },
+  { icon: Bed, label: 'Rooms & Beds', path: '/rooms', roles: ['admin', 'warden'] },
+  { icon: Users, label: 'Residents', path: '/residents', roles: ['admin', 'warden'] },
+  { icon: CreditCard, label: 'Billing', path: '/billing', roles: ['admin'] },
+  { icon: Users, label: 'Staff Management', path: '/staff', roles: ['admin'] },
+  { icon: Users, label: 'Attendance', path: '/attendance', roles: ['warden'] },
+  { icon: UtensilsCrossed, label: 'Mess', path: '/mess', roles: ['admin', 'warden', 'cook'] },
+  { icon: Package, label: 'Inventory', path: '/inventory', roles: ['cook'] },
   { icon: ShieldCheck, label: 'Building', path: '/building', roles: ['admin'] },
-   { icon: Settings, label: 'Settings', path: '/settings', roles: ['admin'] },
- ];
+  { icon: Wallet, label: 'Monthly Expense', path: '/expenses', roles: ['admin'] },
+  { icon: Settings, label: 'Settings', path: '/settings', roles: ['admin'] },
+];
  
- export function AppSidebar() {
+interface AppSidebarProps {
+  basePath?: string;
+  showRoleSwitcher?: boolean;
+}
+
+const buildPath = (basePath: string | undefined, path: string) => {
+  if (!basePath) return path;
+  if (path === '/') return basePath;
+  return `${basePath}${path}`;
+};
+
+export function AppSidebar({ basePath, showRoleSwitcher = true }: AppSidebarProps) {
    const { sidebarOpen, setSidebarOpen, currentRole, setCurrentRole, currentUser } = useApp();
    const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleRoleChange = (value: 'admin' | 'warden' | 'cook') => {
+    if (value === 'warden') {
+      navigate('/warden/login');
+      return;
+    }
+    if (value === 'cook') {
+      navigate('/cook/login');
+      return;
+    }
+    setCurrentRole('admin');
+    navigate('/admin');
+  };
  
-   const filteredNavItems = navItems.filter(item => item.roles.includes(currentRole));
+  const filteredNavItems = navItems.filter(item => item.roles.includes(currentRole));
+  const attendanceSubItems = [
+    { label: 'Meal Attendance', path: '/attendance/meal' },
+    { label: 'Leave Management', path: '/attendance/leave' },
+  ];
  
    return (
      <aside
@@ -71,16 +106,18 @@
        </div>
  
        {/* Role Switcher */}
-       {sidebarOpen && (
+      {sidebarOpen && showRoleSwitcher && (
          <div className="px-4 py-3 border-b border-sidebar-border">
-           <Select value={currentRole} onValueChange={(v) => setCurrentRole(v as 'admin' | 'warden')}>
+          <Select value={currentRole} onValueChange={(v) => handleRoleChange(v as 'admin' | 'warden' | 'cook')}>
              <SelectTrigger className="w-full bg-sidebar-accent border-sidebar-border text-sidebar-foreground">
                <div className="flex items-center gap-2">
-                 {currentRole === 'admin' ? (
-                   <ShieldCheck className="w-4 h-4 text-sidebar-primary" />
-                 ) : (
-                   <UserCog className="w-4 h-4 text-sidebar-primary" />
-                 )}
+                {currentRole === 'admin' ? (
+                  <ShieldCheck className="w-4 h-4 text-sidebar-primary" />
+                ) : currentRole === 'warden' ? (
+                  <UserCog className="w-4 h-4 text-sidebar-primary" />
+                ) : (
+                  <ChefHat className="w-4 h-4 text-sidebar-primary" />
+                )}
                  <SelectValue />
                </div>
              </SelectTrigger>
@@ -97,6 +134,12 @@
                    Warden
                  </div>
                </SelectItem>
+              <SelectItem value="cook">
+                <div className="flex items-center gap-2">
+                  <ChefHat className="w-4 h-4" />
+                  Cook
+                </div>
+              </SelectItem>
              </SelectContent>
            </Select>
          </div>
@@ -105,14 +148,17 @@
        {/* Navigation */}
        <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
          <ul className="space-y-1">
-           {filteredNavItems.map((item) => {
+          {filteredNavItems.map((item) => {
              const Icon = item.icon;
-             const isActive = location.pathname === item.path;
+            const navPath = buildPath(basePath, item.path);
+            const isActive =
+              location.pathname === navPath ||
+              location.pathname.startsWith(`${navPath}/`);
  
              return (
-               <li key={item.path}>
+              <li key={navPath}>
                  <NavLink
-                   to={item.path}
+                  to={navPath}
                    className={cn(
                      'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
                      'hover:bg-sidebar-accent',
@@ -128,6 +174,32 @@
                      </span>
                    )}
                  </NavLink>
+                {sidebarOpen &&
+                  currentRole === 'warden' &&
+                  item.label === 'Attendance' && (
+                    <div className="ml-9 mt-1 space-y-1">
+                      {attendanceSubItems.map((subItem) => {
+                        const subPath = buildPath(basePath, subItem.path);
+                        const isSubActive =
+                          location.pathname === subPath ||
+                          location.pathname.startsWith(`${subPath}/`);
+                        return (
+                          <NavLink
+                            key={subPath}
+                            to={subPath}
+                            className={cn(
+                              'block rounded-md px-3 py-1.5 text-sm transition-colors',
+                              'hover:bg-sidebar-accent',
+                              isSubActive && 'bg-sidebar-accent text-sidebar-primary',
+                              !isSubActive && 'text-sidebar-foreground/70',
+                            )}
+                          >
+                            {subItem.label}
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
                </li>
              );
            })}

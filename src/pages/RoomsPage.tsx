@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useApp } from "@/contexts/AppContext";
 import {
   Select,
   SelectContent,
@@ -36,6 +37,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const RoomsPage = () => {
+  const { currentRole } = useApp();
+  const isWarden = currentRole === "warden";
   const [selectedBlock, setSelectedBlock] = useState("block-a");
   const [viewMode, setViewMode] = useState<"grid" | "compact">("grid");
   const [statusFilter, setStatusFilter] = useState<RoomStatus | "all">("all");
@@ -91,6 +94,7 @@ const RoomsPage = () => {
   };
 
   const handleOpenAddRoom = () => {
+    if (isWarden) return;
     setEditingRoomId(null);
     setRoomForm({
       number: "",
@@ -106,6 +110,7 @@ const RoomsPage = () => {
   };
 
   const handleOpenEditRoom = (room: Room) => {
+    if (isWarden) return;
     const floorNumber =
       currentBlock?.floors.find((floor) => floor.id === room.floorId)?.number ??
       "";
@@ -128,6 +133,7 @@ const RoomsPage = () => {
   };
 
   const handleDeleteRoom = (roomId: string) => {
+    if (isWarden) return;
     setRooms((prev) => prev.filter((room) => room.id !== roomId));
     if (editingRoomId === roomId) {
       setEditingRoomId(null);
@@ -139,6 +145,7 @@ const RoomsPage = () => {
   };
 
   const handleAddRoom = () => {
+    if (isWarden) return;
     const errors: Record<string, string> = {};
     if (!roomForm.number.trim()) errors.number = "Room number is required.";
     const floorNumber = Number(roomForm.floorNumber);
@@ -271,10 +278,12 @@ const RoomsPage = () => {
             )}
           </div>
 
-          <Button className="gradient-primary" onClick={handleOpenAddRoom}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Room
-          </Button>
+          {!isWarden && (
+            <Button className="gradient-primary" onClick={handleOpenAddRoom}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Room
+            </Button>
+          )}
         </div>
 
         {/* Status Summary */}
@@ -585,23 +594,27 @@ const RoomsPage = () => {
               </div>
 
               <div className="flex gap-2 pt-4">
-                <Button
-                  className="flex-1"
-                  variant="outline"
-                  onClick={() => {
-                    handleOpenEditRoom(selectedRoom);
-                    setSelectedRoom(null);
-                  }}
-                >
-                  Edit Room
-                </Button>
-                <Button
-                  className="flex-1"
-                  variant="destructive"
-                  onClick={() => handleDeleteRoom(selectedRoom.id)}
-                >
-                  Delete
-                </Button>
+                {!isWarden && (
+                  <>
+                    <Button
+                      className="flex-1"
+                      variant="outline"
+                      onClick={() => {
+                        handleOpenEditRoom(selectedRoom);
+                        setSelectedRoom(null);
+                      }}
+                    >
+                      Edit Room
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      variant="destructive"
+                      onClick={() => handleDeleteRoom(selectedRoom.id)}
+                    >
+                      Delete
+                    </Button>
+                  </>
+                )}
                 {selectedRoom.status === "available" && (
                   <Button className="flex-1 gradient-primary">Allocate</Button>
                 )}

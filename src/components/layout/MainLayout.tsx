@@ -4,16 +4,22 @@
  import { useApp } from '@/contexts/AppContext';
  import { cn } from '@/lib/utils';
  
- interface MainLayoutProps {
-   children: ReactNode;
- }
- 
- export function MainLayout({ children }: MainLayoutProps) {
+interface MainLayoutProps {
+  children: ReactNode;
+  basePath?: string;
+  showRoleSwitcher?: boolean;
+}
+
+export function MainLayout({
+  children,
+  basePath,
+  showRoleSwitcher = true,
+}: MainLayoutProps) {
    const { sidebarOpen } = useApp();
  
    return (
      <div className="min-h-screen bg-background">
-       <AppSidebar />
+      <AppSidebar basePath={basePath} showRoleSwitcher={showRoleSwitcher} />
        <main
          className={cn(
            'min-h-screen transition-all duration-300 pb-20 md:pb-0',
@@ -22,7 +28,7 @@
        >
          {children}
        </main>
-       <MobileNav />
+      <MobileNav basePath={basePath} />
      </div>
    );
  }

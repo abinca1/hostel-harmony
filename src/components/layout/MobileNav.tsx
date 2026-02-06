@@ -5,35 +5,48 @@
    CreditCard,
   UtensilsCrossed,
   Users,
+  Package,
  } from 'lucide-react';
  import { cn } from '@/lib/utils';
  import { useApp } from '@/contexts/AppContext';
  
- const navItems = [
-   { icon: LayoutDashboard, label: 'Home', path: '/' },
-   { icon: Bed, label: 'Rooms', path: '/rooms' },
-   { icon: CreditCard, label: 'Billing', path: '/billing', adminOnly: true },
-  { icon: Users, label: 'Warden', path: '/attendance' },
-   { icon: UtensilsCrossed, label: 'Mess', path: '/mess' },
- ];
+const navItems = [
+  { icon: LayoutDashboard, label: 'Home', path: '/', roles: ['admin', 'warden', 'cook'] },
+  { icon: Bed, label: 'Rooms', path: '/rooms', roles: ['admin', 'warden'] },
+  { icon: CreditCard, label: 'Billing', path: '/billing', roles: ['admin'] },
+  { icon: Users, label: 'Attendance', path: '/attendance', roles: ['warden'] },
+  { icon: UtensilsCrossed, label: 'Mess', path: '/mess', roles: ['admin', 'warden', 'cook'] },
+  { icon: Package, label: 'Inventory', path: '/inventory', roles: ['cook'] },
+];
  
- export function MobileNav() {
+interface MobileNavProps {
+  basePath?: string;
+}
+
+const buildPath = (basePath: string | undefined, path: string) => {
+  if (!basePath) return path;
+  if (path === '/') return basePath;
+  return `${basePath}${path}`;
+};
+
+export function MobileNav({ basePath }: MobileNavProps) {
    const location = useLocation();
    const { currentRole } = useApp();
  
-   const filteredItems = navItems.filter(item => !item.adminOnly || currentRole === 'admin');
+  const filteredItems = navItems.filter(item => item.roles.includes(currentRole));
  
    return (
      <nav className="mobile-nav safe-bottom">
        <div className="flex items-center justify-around py-2 px-4">
          {filteredItems.map((item) => {
            const Icon = item.icon;
-           const isActive = location.pathname === item.path;
+          const navPath = buildPath(basePath, item.path);
+          const isActive = location.pathname === navPath;
  
            return (
              <NavLink
-               key={item.path}
-               to={item.path}
+              key={navPath}
+              to={navPath}
                className={cn(
                  'flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors',
                  isActive ? 'text-primary' : 'text-muted-foreground'

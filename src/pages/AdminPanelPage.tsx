@@ -71,12 +71,6 @@ interface BedspaceConfig {
   features: string[];
 }
 
-interface WardenProfile {
-  id: string;
-  name: string;
-  contact: string;
-  buildingId: string;
-}
 
 const initialBuildings: Building[] = [
   {
@@ -159,27 +153,12 @@ const initialBedspaces: BedspaceConfig[] = [
   },
 ];
 
-const initialWardens: WardenProfile[] = [
-  {
-    id: "warden-1",
-    name: "Anita Rao",
-    contact: "+91 98989 76543",
-    buildingId: "building-1",
-  },
-  {
-    id: "warden-2",
-    name: "Karan Mehta",
-    contact: "+91 91234 56780",
-    buildingId: "building-2",
-  },
-];
 
 const AdminPanelPage = () => {
   const [buildings, setBuildings] = useState<Building[]>(initialBuildings);
   const [rooms, setRooms] = useState<ManagedRoom[]>(initialRooms);
   const [bedspaces, setBedspaces] =
     useState<BedspaceConfig[]>(initialBedspaces);
-  const [wardens, setWardens] = useState<WardenProfile[]>(initialWardens);
 
   const [selectedBuildingId, setSelectedBuildingId] = useState(
     initialBuildings[0]?.id ?? "",
@@ -210,11 +189,6 @@ const AdminPanelPage = () => {
     price: "",
     features: "",
   });
-  const [wardenForm, setWardenForm] = useState({
-    name: "",
-    contact: "",
-    buildingId: selectedBuildingId,
-  });
 
   const [buildingErrors, setBuildingErrors] = useState<Record<string, string>>(
     {},
@@ -223,7 +197,6 @@ const AdminPanelPage = () => {
   const [bedspaceErrors, setBedspaceErrors] = useState<Record<string, string>>(
     {},
   );
-  const [wardenErrors, setWardenErrors] = useState<Record<string, string>>({});
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [buildingModalOpen, setBuildingModalOpen] = useState(false);
   const [roomModalOpen, setRoomModalOpen] = useState(false);
@@ -231,7 +204,6 @@ const AdminPanelPage = () => {
 
   useEffect(() => {
     setRoomForm((prev) => ({ ...prev, buildingId: selectedBuildingId }));
-    setWardenForm((prev) => ({ ...prev, buildingId: selectedBuildingId }));
   }, [selectedBuildingId]);
 
   const buildingRooms = useMemo(
@@ -506,43 +478,12 @@ const AdminPanelPage = () => {
     setBedspaceErrors({});
   };
 
-  const handleAddWarden = () => {
-    const errors: Record<string, string> = {};
-    if (!wardenForm.name.trim()) errors.name = "Warden name is required.";
-    if (!wardenForm.contact.trim())
-      errors.contact = "Contact details are required.";
-    if (!wardenForm.buildingId) errors.buildingId = "Select a building.";
-
-    const duplicateContact = wardens.some(
-      (warden) => warden.contact === wardenForm.contact.trim(),
-    );
-    if (duplicateContact) {
-      errors.contact = "This contact is already assigned to a warden.";
-    }
-
-    setWardenErrors(errors);
-    if (Object.keys(errors).length) return;
-
-    const newWarden: WardenProfile = {
-      id: `warden-${Date.now()}`,
-      name: wardenForm.name.trim(),
-      contact: wardenForm.contact.trim(),
-      buildingId: wardenForm.buildingId,
-    };
-    setWardens((prev) => [...prev, newWarden]);
-    setWardenForm({
-      name: "",
-      contact: "",
-      buildingId: wardenForm.buildingId,
-    });
-    setWardenErrors({});
-  };
 
   return (
     <div className="animate-fade-in">
       <Header
         title="Admin Panel"
-        subtitle="Configure buildings, rooms, and warden assignments"
+        subtitle="Configure buildings and rooms"
       />
 
       <div className="p-4 md:p-6 space-y-6">
@@ -925,7 +866,7 @@ const AdminPanelPage = () => {
                   Building Directory
                 </CardTitle>
                 <CardDescription>
-                  Tap a building to manage rooms and wardens.
+                  Tap a building to manage rooms.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -933,9 +874,6 @@ const AdminPanelPage = () => {
                   const roomCount = rooms.filter(
                     (room) => room.buildingId === building.id,
                   ).length;
-                  const buildingWarden = wardens.find(
-                    (warden) => warden.buildingId === building.id,
-                  );
                   return (
                     <div
                       key={building.id}
@@ -971,16 +909,6 @@ const AdminPanelPage = () => {
                                 <span>{building.capacity} Capacity</span>
                               </>
                             )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-semibold text-muted-foreground">
-                              Warden
-                            </p>
-                            <p className="text-sm font-semibold text-primary">
-                              {buildingWarden
-                                ? `${buildingWarden.name} • ${buildingWarden.contact}`
-                                : "Unassigned"}
-                            </p>
                           </div>
                         </div>
                       </button>
@@ -1088,7 +1016,7 @@ const AdminPanelPage = () => {
             <DialogHeader>
               <DialogTitle>Documentation</DialogTitle>
               <DialogDescription>
-                How to use building, room, and warden management.
+                How to use building and room management.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
@@ -1108,9 +1036,6 @@ const AdminPanelPage = () => {
                       Create rooms for the selected building, setting bedspace
                       counts and pricing.
                     </li>
-                    <li>
-                      Assign wardens to buildings with verified contact details.
-                    </li>
                   </ol>
                   <Separator />
                   <div className="space-y-2">
@@ -1124,7 +1049,6 @@ const AdminPanelPage = () => {
                         Room: A-101 • Type: Double • Bedspaces: 2 • Price:
                         ₹6,200
                       </p>
-                      <p>Warden: Anita Rao • Contact: +91 98989 76543</p>
                     </div>
                   </div>
                 </CardContent>
@@ -1134,7 +1058,7 @@ const AdminPanelPage = () => {
                 <CardHeader>
                   <CardTitle>Database Schema Suggestions</CardTitle>
                   <CardDescription>
-                    Normalize by building, room, and warden with foreign keys.
+                    Normalize by building and room with foreign keys.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1168,11 +1092,6 @@ const AdminPanelPage = () => {
                           </TableCell>
                           <TableCell>unique(building_id, number)</TableCell>
                         </TableRow>
-                        <TableRow>
-                          <TableCell className="font-medium">wardens</TableCell>
-                          <TableCell>id, name, contact, building_id</TableCell>
-                          <TableCell>unique(contact)</TableCell>
-                        </TableRow>
                       </TableBody>
                     </Table>
                   </div>
@@ -1194,10 +1113,6 @@ const AdminPanelPage = () => {
                       conflicts.
                     </li>
                     <li>Floor and bedspace counts must be positive numbers.</li>
-                    <li>
-                      Warden contacts are unique to prevent duplicate
-                      assignments.
-                    </li>
                     <li>
                       Pricing inputs enforce positive numbers for consistent
                       billing.
