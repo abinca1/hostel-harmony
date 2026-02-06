@@ -1,11 +1,20 @@
  import { useState } from 'react';
  import { Header } from '@/components/layout/Header';
  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
- import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
  import { Badge } from '@/components/ui/badge';
  import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
  import { Switch } from '@/components/ui/switch';
  import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
  import {
    UtensilsCrossed,
    Coffee,
@@ -24,7 +33,7 @@
    mockMealAttendance,
    mockResidents,
  } from '@/data/mockData';
- import { MealType, DietaryTag } from '@/types/hostel';
+import { MealPlan, MealType, DietaryTag } from '@/types/hostel';
  import { cn } from '@/lib/utils';
  
  const mealIcons: Record<MealType, React.ElementType> = {
@@ -46,10 +55,18 @@
  const MessPage = () => {
    const [selectedDay, setSelectedDay] = useState(new Date().getDay());
    const [selectedMeal, setSelectedMeal] = useState<MealType>('lunch');
+  const [menuItems, setMenuItems] = useState(mockMenuItems);
+  const [mealAttendance, setMealAttendance] = useState(mockMealAttendance);
+  const [mealPlans, setMealPlans] = useState(mockMealPlans);
+  const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
+  const [planDraft, setPlanDraft] = useState<MealPlan | null>(null);
  
-   const todayMenu = mockMenuItems.filter(item => item.dayOfWeek === selectedDay);
+  const todayMenu = menuItems.filter(item => item.dayOfWeek === selectedDay);
    
-   const mealAttendanceToday = mockMealAttendance.filter(a => a.mealType === selectedMeal);
+  const todayKey = new Date().toISOString().split('T')[0];
+  const mealAttendanceToday = mealAttendance.filter(
+    a => a.mealType === selectedMeal && a.date === todayKey
+  );
    const totalWithPlan = mockResidents.filter(r => r.mealPlan && r.mealPlan !== 'no-meals').length;
    const attended = mealAttendanceToday.filter(a => a.attended).length;
    const optedOut = mealAttendanceToday.filter(a => a.optedOut).length;
@@ -61,6 +78,85 @@
        maximumFractionDigits: 0,
      }).format(amount);
    };
+  const handleToggleAttendance = (residentId: string, checked: boolean) => {
+    setMealAttendance(prev => {
+      const index = prev.findIndex(
+        entry =>
+          entry.residentId === residentId &&
+          entry.mealType === selectedMeal &&
+          entry.date === todayKey
+      );
+      if (index === -1) {
+        return [
+          ...prev,
+          {
+            id: `att-${Date.now()}`,
+            residentId,
+            date: todayKey,
+            mealType: selectedMeal,
+            attended: checked,
+            optedOut: false,
+          },
+        ];
+      }
+      return prev.map((entry, idx) =>
+        idx === index
+          ? { ...entry, attended: checked, optedOut: checked ? false : entry.optedOut }
+          : entry
+      );
+    });
+  };
+  const handleToggleOptOut = (residentId: string) => {
+    setMealAttendance(prev => {
+      const index = prev.findIndex(
+        entry =>
+          entry.residentId === residentId &&
+          entry.mealType === selectedMeal &&
+          entry.date === todayKey
+      );
+      if (index === -1) {
+        return [
+          ...prev,
+          {
+            id: `att-${Date.now()}`,
+            residentId,
+            date: todayKey,
+            mealType: selectedMeal,
+            attended: false,
+            optedOut: true,
+          },
+        ];
+      }
+      return prev.map((entry, idx) =>
+        idx === index
+          ? { ...entry, optedOut: !entry.optedOut, attended: false }
+          : entry
+      );
+    });
+  };
+  const handleOpenPlan = (plan: MealPlan) => {
+    setPlanDraft({ ...plan });
+    setIsPlanDialogOpen(true);
+  };
+  const handleSavePlan = () => {
+    if (!planDraft) return;
+    setMealPlans(prev =>
+      prev.map(plan => (plan.id === planDraft.id ? planDraft : plan))
+    );
+    setIsPlanDialogOpen(false);
+  };
+  const handleTogglePlanMeal = (meal: MealType) => {
+    setPlanDraft(current => {
+      if (!current) return current;
+      const exists = current.mealsIncluded.includes(meal);
+      return {
+        ...current,
+        mealsIncluded: exists
+          ? current.mealsIncluded.filter(item => item !== meal)
+          : [...current.mealsIncluded, meal],
+      };
+    });
+  };
  
    return (
      <div className="animate-fade-in">
@@ -302,10 +398,23 @@
                                  </p>
                                </div>
                              </div>
-                             <Switch
-                               checked={attendance?.attended || false}
-                               className="data-[state=checked]:bg-success"
-                             />
+                             <div className="flex flex-col items-end gap-2">
+                               <Switch
+                                 checked={attendance?.attended || false}
+                                 onCheckedChange={checked =>
+                                   handleToggleAttendance(resident.id, checked)
+                                 }
+                                 className="data-[state=checked]:bg-success"
+                               />
+                               <Button
+                                 variant={attendance?.optedOut ? 'default' : 'outline'}
+                                 size="sm"
+                                 className="h-7 px-2 text-xs"
+                                 onClick={() => handleToggleOptOut(resident.id)}
+                               >
+                                 {attendance?.optedOut ? 'Opted Out' : 'Opt-out'}
+                               </Button>
+                             </div>
                            </div>
                            {resident.dietaryTags.length > 0 && (
                              <div className="flex gap-1 mt-2 ml-13">
@@ -331,7 +440,7 @@
            {/* Meal Plans */}
            <TabsContent value="plans">
              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-               {mockMealPlans.map(plan => (
+              {mealPlans.map(plan => (
                  <Card key={plan.id} className="card-hover">
                    <CardContent className="p-6">
                      <div className="text-center space-y-4">
@@ -365,8 +474,12 @@
                            <span className="text-xs font-normal text-muted-foreground">/month</span>
                          </p>
                        </div>
-                       <Button variant="outline" className="w-full">
-                         Edit Plan
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleOpenPlan(plan)}
+                      >
+                        Edit Plan
                        </Button>
                      </div>
                    </CardContent>
@@ -376,6 +489,94 @@
            </TabsContent>
          </Tabs>
        </div>
+
+      <Dialog open={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Meal Plan</DialogTitle>
+          </DialogHeader>
+          {planDraft ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="plan-name">Plan Name</Label>
+                <Input
+                  id="plan-name"
+                  value={planDraft.name}
+                  onChange={event =>
+                    setPlanDraft({ ...planDraft, name: event.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-description">Description</Label>
+                <Input
+                  id="plan-description"
+                  value={planDraft.description}
+                  onChange={event =>
+                    setPlanDraft({ ...planDraft, description: event.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-price">Monthly Price</Label>
+                <Input
+                  id="plan-price"
+                  type="number"
+                  value={planDraft.monthlyPrice}
+                  onChange={event =>
+                    setPlanDraft({
+                      ...planDraft,
+                      monthlyPrice: Number(event.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Meals Included</Label>
+                <div className="flex flex-wrap gap-2">
+                  {(['breakfast', 'lunch', 'dinner'] as MealType[]).map(meal => (
+                    <Button
+                      key={meal}
+                      variant={
+                        planDraft.mealsIncluded.includes(meal)
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      className="capitalize"
+                      onClick={() => handleTogglePlanMeal(meal)}
+                    >
+                      {meal}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="text-sm font-medium">Plan Active</p>
+                  <p className="text-xs text-muted-foreground">
+                    Toggle availability for residents
+                  </p>
+                </div>
+                <Switch
+                  checked={planDraft.isActive}
+                  onCheckedChange={checked =>
+                    setPlanDraft({ ...planDraft, isActive: checked })
+                  }
+                />
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No plan selected.</p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPlanDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePlan}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
      </div>
    );
  };
